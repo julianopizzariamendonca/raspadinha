@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raspadinha Premiada!</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body {
+      background: #fdf2e9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .card {
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 380px;
+      width: 100%;
+    }
+    h2 { color: #d35400; margin-bottom: 8px; }
+    p { color: #555; font-size: 14px; margin-bottom: 20px; }
+    
+    .scratch-area {
+      position: relative;
+      width: 280px;
+      height: 140px;
+      margin: 0 auto 20px auto;
+      user-select: none;
+    }
+    .prize {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #fff3cd;
+      border: 2px dashed #f39c12;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #d35400;
+      font-weight: bold;
+      font-size: 20px;
+      padding: 10px;
+    }
+    canvas {
+      position: absolute;
+      top: 0; left: 0;
+      border-radius: 12px;
+      cursor: pointer;
+      touch-action: none;
+    }
+    .btn-whatsapp {
+      display: none;
+      background: #25d366;
+      color: white;
+      text-decoration: none;
+      padding: 14px 20px;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 16px;
+      box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+      transition: transform 0.2s;
+    }
+    .btn-whatsapp:active { transform: scale(0.98); }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>🍕 Raspou, Ganhou!</h2>
+    <p>Raspe o campo cinza com o dedo para descobrir o seu presente especial de hoje:</p>
+
+    <div class="scratch-area">
+      <div class="prize" id="prize">
+        <span style="font-size: 12px; color: #888;">SEU PRÊMIO:</span>
+        <span id="prizeText">...</span>
+      </div>
+      <canvas id="scratchCanvas" width="280" height="140"></canvas>
+    </div>
+
+    <a id="claimBtn" class="btn-whatsapp" href="#" target="_blank">
+      👉 Resgatar Prêmio no WhatsApp
+    </a>
+  </div>
+
+  <script>
+    // 1. CONFIGURE SEUS PRÊMIOS E O SEU NÚMERO AQUI
+    const whatsappNumber = "5511999999999"; // Coloque seu DDD + Número sem espaços ou traços
+    
+    // Lista de prêmios com frequências ajustáveis (duplique os itens mais comuns)
+    const prizes = [
+      "10% OFF no Pedido",
+      "10% OFF no Pedido",
+      "10% OFF no Pedido",
+      "1 Pizza Doce Broto Grátis",
+      "Entrega Grátis"
+    ];
+
+    // Sorteia o prêmio no carregamento
+    const selectedPrize = prizes[Math.floor(Math.random() * prizes.length)];
+    document.getElementById('prizeText').innerText = selectedPrize;
+
+    // Configura o link do WhatsApp
+    const message = encodeURIComponent(`Olá! Raspei o cupom no site e ganhei: *${selectedPrize}*! Como faço para resgatar?`);
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
+    document.getElementById('claimBtn').href = whatsappUrl;
+
+    // 2. LÓGICA DA RASPADINHA (CANVAS)
+    const canvas = document.getElementById('scratchCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Desenha a camada raspável
+    ctx.fillStyle = '#C0C0C0';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.fillStyle = '#555555';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('✨ RASPE AQUI ✨', canvas.width / 2, canvas.height / 2 + 6);
+
+    let isDrawing = false;
+
+    function scratch(e) {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(x, y, 22, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Mostra o botão do WhatsApp
+      document.getElementById('claimBtn').style.display = 'inline-block';
+    }
+
+    canvas.addEventListener('mousedown', () => isDrawing = true);
+    canvas.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('mousemove', scratch);
+
+    canvas.addEventListener('touchstart', (e) => { isDrawing = true; scratch(e); });
+    canvas.addEventListener('touchend', () => isDrawing = false);
+    canvas.addEventListener('touchmove', scratch);
+  </script>
+</body>
+</html>
