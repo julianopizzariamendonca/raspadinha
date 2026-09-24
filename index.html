@@ -70,13 +70,27 @@
       transition: transform 0.2s;
     }
     .btn-whatsapp:active { transform: scale(0.98); }
+    .already-scratched-msg {
+      color: #856404;
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 15px;
+      display: none;
+    }
   </style>
 </head>
 <body>
 
   <div class="card">
     <h2>🍕 Raspou, Ganhou!</h2>
-    <p>Raspe o campo cinza com o dedo para descobrir o seu presente especial de hoje:</p>
+    <p id="instructionText">Raspe o campo cinza com o dedo para descobrir o seu presente especial de hoje:</p>
+    
+    <div id="alreadyScratchedMsg" class="already-scratched-msg">
+      🔒 <b>Você já resgatou seu cupom!</b> Veja abaixo o prêmio sorteado para você:
+    </div>
 
     <div class="scratch-area">
       <div class="prize" id="prize">
@@ -92,67 +106,91 @@
   </div>
 
   <script>
-    // 1. CONFIGURE SEUS PRÊMIOS E O SEU NÚMERO AQUI
-    const whatsappNumber = "5569992059646"; // Coloque seu DDD + Número sem espaços ou traços
-    
-    // Lista de prêmios com frequências ajustáveis (duplique os itens mais comuns)
+    // 1. SEU NÚMERO DE WHATSAPP CONFIGURADO
+    const whatsappNumber = "5569992059646"; 
+
+    // 2. LISTA DE PRÊMIOS ATUALIZADA
     const prizes = [
       "10% OFF no Pedido",
       "10% OFF no Pedido",
       "10% OFF no Pedido",
+      "15% OFF no Pedido",
       "1 Pizza Doce Broto Grátis",
-      "Entrega Grátis"
+      "Borda de Catupiry Grátis",
+      "Borda de Chocolate Grátis",
+      "Guaraná 2L Grátis"
     ];
 
-    // Sorteia o prêmio no carregamento
-    const selectedPrize = prizes[Math.floor(Math.random() * prizes.length)];
-    document.getElementById('prizeText').innerText = selectedPrize;
-
-    // Configura o link do WhatsApp
-    const message = encodeURIComponent(`Olá! Raspei o cupom no site e ganhei: *${selectedPrize}*! Como faço para resgatar?`);
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
-    document.getElementById('claimBtn').href = whatsappUrl;
-
-    // 2. LÓGICA DA RASPADINHA (CANVAS)
     const canvas = document.getElementById('scratchCanvas');
     const ctx = canvas.getContext('2d');
+    const claimBtn = document.getElementById('claimBtn');
+    const prizeText = document.getElementById('prizeText');
+    const alreadyScratchedMsg = document.getElementById('alreadyScratchedMsg');
+    const instructionText = document.getElementById('instructionText');
 
-    // Desenha a camada raspável
-    ctx.fillStyle = '#C0C0C0';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    ctx.fillStyle = '#555555';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('✨ RASPE AQUI ✨', canvas.width / 2, canvas.height / 2 + 6);
+    // Verifica se este cliente já tem um prêmio salvo no dispositivo
+    let savedPrize = localStorage.getItem('cliente_premio_raspadinha');
 
-    let isDrawing = false;
-
-    function scratch(e) {
-      if (!isDrawing) return;
-      const rect = canvas.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-      const x = clientX - rect.left;
-      const y = clientY - rect.top;
-
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.arc(x, y, 22, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Mostra o botão do WhatsApp
-      document.getElementById('claimBtn').style.display = 'inline-block';
+    function setupWhatsAppBtn(prize) {
+      const message = encodeURIComponent(`Olá! Raspei a raspadinha no site e ganhei: *${prize}*! Como faço para resgatar no meu pedido?`);
+      claimBtn.href = `https://wa.me/${whatsappNumber}?text=${message}`;
     }
 
-    canvas.addEventListener('mousedown', () => isDrawing = true);
-    canvas.addEventListener('mouseup', () => isDrawing = false);
-    canvas.addEventListener('mousemove', scratch);
+    if (savedPrize) {
+      // BLOQUEIO: Se já raspou antes, revela direto o prêmio antigo e remove a raspadinha
+      canvas.style.display = 'none';
+      prizeText.innerText = savedPrize;
+      alreadyScratchedMsg.style.display = 'block';
+      instructionText.style.display = 'none';
+      claimBtn.style.display = 'inline-block';
+      setupWhatsAppBtn(savedPrize);
+    } else {
+      // PRIMEIRA VEZ: Sorteia um prêmio novo
+      const selectedPrize = prizes[Math.floor(Math.random() * prizes.length)];
+      prizeText.innerText = selectedPrize;
+      setupWhatsAppBtn(selectedPrize);
 
-    canvas.addEventListener('touchstart', (e) => { isDrawing = true; scratch(e); });
-    canvas.addEventListener('touchend', () => isDrawing = false);
-    canvas.addEventListener('touchmove', scratch);
+      // Desenha a raspadinha cinza
+      ctx.fillStyle = '#C0C0C0';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.fillStyle = '#555555';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('✨ RASPE AQUI ✨', canvas.width / 2, canvas.height / 2 + 6);
+
+      let isDrawing = false;
+
+      function scratch(e) {
+        if (!isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        ctx.arc(x, y, 22, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Trava o prêmio no navegador assim que o cliente começa a raspar
+        if (!localStorage.getItem('cliente_premio_raspadinha')) {
+          localStorage.setItem('cliente_premio_raspadinha', selectedPrize);
+        }
+
+        claimBtn.style.display = 'inline-block';
+      }
+
+      canvas.addEventListener('mousedown', () => isDrawing = true);
+      canvas.addEventListener('mouseup', () => isDrawing = false);
+      canvas.addEventListener('mousemove', scratch);
+
+      canvas.addEventListener('touchstart', (e) => { isDrawing = true; scratch(e); });
+      canvas.addEventListener('touchend', () => isDrawing = false);
+      canvas.addEventListener('touchmove', scratch);
+    }
   </script>
 </body>
 </html>
